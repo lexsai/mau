@@ -9,8 +9,9 @@ public class LobbyManagerService
     private readonly IHubContext<GameHub, IGameHub> _hubContext;
     private readonly IServiceProvider _serviceProvider;
 
-    private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();
-    private static readonly object _lobbyKey = new();
+    private readonly ConcurrentDictionary<string, LobbyService> _lobbies = new();
+
+    public static object LobbyKey { get; } = new();
 
     public LobbyManagerService(IHubContext<GameHub, IGameHub> hubContext, IServiceProvider serviceProvider)
     {
@@ -20,32 +21,7 @@ public class LobbyManagerService
 
     public async Task JoinLobby(HubCallerContext hubCallerContext, string lobbyName, string playerName)
     {
-        string connectionId = hubCallerContext.ConnectionId;
-        IGameHub connection = _hubContext.Clients.Client(connectionId);
-
-        if (hubCallerContext.Items.ContainsKey(_lobbyKey))
-        {
-            await connection.WriteMessage("Already in a lobby!");
-            return;
-        }
-
-        Lobby lobby = _lobbies[lobbyName];
-
-        if (lobby.TryAddPlayer(connectionId, playerName, connection))
-        {
-            await _hubContext.Groups.AddToGroupAsync(connectionId, lobbyName);
-
-            await lobby.Group.WriteMessage(string.Join(", ", lobby.PlayerNames));
-
-            hubCallerContext.ConnectionAborted.Register(() => lobby.TryRemovePlayer(connectionId));
-
-            hubCallerContext.Items[_lobbyKey] = lobby;
-            lobby.Completed.Register(() => hubCallerContext.Items.Remove(_lobbyKey));
-        }
-        else
-        {
-            await connection.WriteMessage("Could not join lobby.");
-        }
+        await _lobbies[lobbyName].AddPlayer(hubCallerContext, playerName);
     }
 
     public async Task CreateLobby(HubCallerContext hubCallerContext, string lobbyName, string playerName)
@@ -65,7 +41,9 @@ public class LobbyManagerService
             return;
         }
 
-        Lobby lobby = new Lobby(lobbyName, _hubContext.Clients.Group(lobbyName));
+        LobbyService lobby = _serviceProvider.GetRequiredService<LobbyService>();
+        lobby.Init(lobbyName);
+
         _lobbies.TryAdd(lobbyName, lobby);
 
         lobby.Completed.Register(() => _lobbies.TryRemove(lobbyName, out _));

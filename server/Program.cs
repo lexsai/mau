@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<LobbyManagerService>();
+builder.Services.AddTransient<LobbyService>();
 
 builder.Services.AddCors(options => options.AddPolicy("CorsPolicy",
         policy =>
