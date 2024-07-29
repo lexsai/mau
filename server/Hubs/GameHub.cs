@@ -17,7 +17,10 @@ public class GameHub: Hub<IGameHub> {
     public async Task CreateLobby(string lobbyName, string userName) {
         await _lobbyManager.CreateLobby(Context, lobbyName, userName);
     }
-    public async Task GetUserList() {
-        await Clients.Client(Context.ConnectionId).WriteMessage("hi");
+
+    public async Task<int> Test() {
+        int x = await Clients.Client(Context.ConnectionId).RequestCard();
+        await Clients.Client(Context.ConnectionId).WriteMessage($"card acknowledged: {x}");
+        return x;
     }
 }

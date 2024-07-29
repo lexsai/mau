@@ -53,7 +53,7 @@ class LobbyInGame : ILobbyState {
             }
 
             IGameHub connection = _lobby.Users[currentPlayer.ConnectionId].Connection;
-            int card = await connection.RequestCard();
+            // int card = await connection.RequestCard();
 
             _gameState.EndTurn();
 

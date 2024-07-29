@@ -21,8 +21,18 @@ public class LobbyManagerService {
         await _lobbies[lobbyName].JoinGame(hubCallerContext, userName);
     }
 
-    public async Task StartGame(string lobbyName) {
-        await _lobbies[lobbyName].StartGame();
+    public async Task StartGame(HubCallerContext hubCallerContext) {
+        IGameHub connection = _hubContext.Clients.Client(hubCallerContext.ConnectionId);
+
+        if (!hubCallerContext.Items.ContainsKey(LobbyKey)) {
+            await connection.WriteMessage("Not in a lobby.");
+            return;
+        }
+
+        LobbyService? lobby = (LobbyService?)hubCallerContext.Items[LobbyKey];
+        if (lobby != null) {
+            await lobby.StartGame();
+        }
     }
 
     public async Task CreateLobby(HubCallerContext hubCallerContext, string lobbyName, string userName) {

@@ -77,9 +77,9 @@ public class LobbyService {
         if (Users.TryAdd(connectionId, new User(connection, userName))) {
             await _hubContext.Groups.AddToGroupAsync(connectionId, Name);
 
-            await Group.WriteMessage(string.Join(", ", UserNames));
+            await Group.LobbyUsersUpdate(string.Join(", ", UserNames));
 
-            hubCallerContext.ConnectionAborted.Register(() => RemoveUser(connectionId));
+            hubCallerContext.ConnectionAborted.Register(async () => await RemoveUser(connectionId));
 
             hubCallerContext.Items[LobbyManagerService.LobbyKey] = this;
             Completed.Register(() => hubCallerContext.Items.Remove(LobbyManagerService.LobbyKey));
@@ -89,7 +89,12 @@ public class LobbyService {
 
     }
 
-    public void RemoveUser(string connectionId) {
+    public async Task RemoveUser(string connectionId) {
+        if (Group == null) {
+            return;
+        }
+
         Users.TryRemove(connectionId, out _);
+        await Group.LobbyUsersUpdate(string.Join(", ", UserNames));
     }
 }
