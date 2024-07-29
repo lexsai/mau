@@ -9,9 +9,6 @@ public class GameState {
     public ArrayList Players { get; } = ArrayList.Synchronized(new ArrayList());
 
     public int CurrentPlayerIndex { get; private set; }
-    public PlayerState? CurrentPlayer {
-        get => (PlayerState?) Players[CurrentPlayerIndex];
-    }
 
     private readonly Random _random = new();
 
@@ -24,7 +21,7 @@ public class GameState {
     }
 
     private void AddPlayerForUser(User user) {
-        Players.Add(new PlayerState(user.Name));
+        Players.Add(new PlayerState(user.ConnectionId));
     }
 
     private void GenerateDeck() {
@@ -49,6 +46,6 @@ public class GameState {
     }
 
     public void EndTurn() {
-        CurrentPlayerIndex++;
+        CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
     }
 }

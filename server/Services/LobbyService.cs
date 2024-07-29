@@ -14,16 +14,9 @@ public class LobbyService {
     private readonly IHubContext<GameHub, IGameHub> _hubContext;
 
     public LobbyWaiting WaitingState { get; }
-    public LobbyWaiting InGameState { get; }
+    public LobbyInGame InGameState { get; }
 
-    private ILobbyState _state;
-    public ILobbyState State {
-        get => _state;
-        set {
-            _state = value;
-            _state.OnStateChange();
-        }
-    }
+    public ILobbyState State { get; set; }
 
     private readonly CancellationTokenSource _completedCts = new();
     public CancellationToken Completed => _completedCts.Token;
@@ -36,7 +29,7 @@ public class LobbyService {
         WaitingState = new(this);
         InGameState = new(this);
 
-        _state = WaitingState;
+        State = WaitingState;
     }
 
     public void Init(string lobbyName) {
@@ -46,6 +39,11 @@ public class LobbyService {
 
         Name = lobbyName;
         Group = _hubContext.Clients.Group(lobbyName);
+    }
+
+    public async Task ChangeState(ILobbyState newState) {
+        State = newState;
+        await State.OnStateChange();
     }
 
     public async Task JoinGame(HubCallerContext hubCallerContext, string userName) {
@@ -74,7 +72,7 @@ public class LobbyService {
             return;
         }
 
-        if (Users.TryAdd(connectionId, new User(connection, userName))) {
+        if (Users.TryAdd(connectionId, new User(connection, userName, connectionId))) {
             await _hubContext.Groups.AddToGroupAsync(connectionId, Name);
 
             await Group.LobbyUsersUpdate(string.Join(", ", UserNames));

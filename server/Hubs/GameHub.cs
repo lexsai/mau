@@ -18,9 +18,20 @@ public class GameHub: Hub<IGameHub> {
         await _lobbyManager.CreateLobby(Context, lobbyName, userName);
     }
 
-    public async Task<int> Test() {
-        int x = await Clients.Client(Context.ConnectionId).RequestCard();
-        await Clients.Client(Context.ConnectionId).WriteMessage($"card acknowledged: {x}");
-        return x;
+    public async Task StartGame() {
+        await _lobbyManager.StartGame(Context);
+    }
+
+    public async Task Test() {
+        CancellationTokenSource cancellationTokenSource = new();
+        cancellationTokenSource.CancelAfter(5 * 1000);
+        try {
+            int x = await Clients.Client(Context.ConnectionId).RequestCard(cancellationTokenSource.Token);
+            await Clients.Client(Context.ConnectionId).WriteMessage($"Card acknowledged: {x}");
+        } catch {
+            await Clients.Client(Context.ConnectionId).WriteMessage("No input received");
+        } finally {
+            cancellationTokenSource.Dispose();
+        }
     }
 }

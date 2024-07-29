@@ -19,8 +19,7 @@ public class LobbyWaiting : ILobbyState {
             return;
         }
 
-        _lobby.State = _lobby.InGameState;
-        await _lobby.Group.WriteMessage("Game started.");
+        await _lobby.ChangeState(_lobby.InGameState);
     }
 
     public async Task OnStateChange() {
