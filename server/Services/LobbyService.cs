@@ -10,12 +10,13 @@ public class LobbyService {
     public IGameHub? Group { get; private set; }
     public string? Name { get; private set; }
     public ConcurrentDictionary<string, User> Users { get; }= new();
+    public User? Winner { get; set; }
 
     private readonly IHubContext<GameHub, IGameHub> _hubContext;
 
     public LobbyWaiting WaitingState { get; }
     public LobbyInGame InGameState { get; }
-
+    public LobbyFinished FinishedState { get; }
     public ILobbyState State { get; set; }
 
     private readonly CancellationTokenSource _completedCts = new();
@@ -28,6 +29,7 @@ public class LobbyService {
 
         WaitingState = new(this);
         InGameState = new(this);
+        FinishedState = new(this);
 
         State = WaitingState;
     }
@@ -94,5 +96,9 @@ public class LobbyService {
 
         Users.TryRemove(connectionId, out _);
         await Group.LobbyUsersUpdate(string.Join(", ", UserNames));
+
+        if (Users.Count == 0) {
+            _completedCts.Cancel();
+        }
     }
 }

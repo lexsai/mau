@@ -8,6 +8,10 @@ public class Card {
         Suit = suit;
         Rank = rank;
     }
+    public override string ToString()
+    {
+        return $"{Rank} of {Suit}";
+    }
 }
 
 public enum CardSuit {

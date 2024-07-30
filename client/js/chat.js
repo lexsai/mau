@@ -24,7 +24,32 @@ connection.on("LobbyUsersUpdate", function (playerNames) {
 });
 
 connection.on("StartGame", function (handData) {
-    console.log(handData);
+    document.getElementById("lastPlayedCardContainer").hidden = false;
+    document.getElementById("hand").hidden = false;
+
+    const handInfoElement = document.getElementById("handInfo");
+    handInfoElement.innerHTML = "";
+
+    for (const card of handData) {
+        const cardElement = document.createElement("li");
+        cardElement.textContent = card;
+        handInfoElement.appendChild(cardElement);
+    }
+});
+
+connection.on("PlayedCardUpdate", function (card) {
+    document.getElementById("lastPlayedCard").textContent = card;
+});
+
+connection.on("HandUpdate", function (handData) {
+    const handInfoElement = document.getElementById("handInfo");
+    handInfoElement.innerHTML = "";
+
+    for (const card of handData) {
+        const cardElement = document.createElement("li");
+        cardElement.textContent = card;
+        handInfoElement.appendChild(cardElement);
+    }
 });
 
 connection.on("RequestCard", async function () {
@@ -82,5 +107,5 @@ document.getElementById("startGame").addEventListener("click", function (event) 
 });
 
 document.getElementById("submitCardButton").addEventListener("click", function (event) {
-    cardInput = parseInt(document.getElementById("cardInput").value);
+    cardInput = document.getElementById("cardInput").value;
 });

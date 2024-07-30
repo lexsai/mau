@@ -6,11 +6,15 @@ namespace mao.GameLogic;
 
 public class GameState {
     public ConcurrentStack<Card> Deck { get; set; } = new();
+    public ConcurrentStack<Card> Discard { get; set; } = new();
+
     public ArrayList Players { get; } = ArrayList.Synchronized(new ArrayList());
 
     public int CurrentPlayerIndex { get; private set; }
 
     private readonly Random _random = new();
+
+    public PlayerState? Winner { get; set; }
 
     public GameState(ConcurrentDictionary<string, User> players) {
         GenerateDeck();
@@ -46,6 +50,35 @@ public class GameState {
     }
 
     public void EndTurn() {
-        CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+        if (CurrentPlayerIndex + 1 >= Players.Count) {
+            CurrentPlayerIndex = 0;
+        } else {
+            CurrentPlayerIndex++;
+        }
+    }
+
+    public Card? PlayCard(int cardIndex) {
+        PlayerState? currentPlayer = (PlayerState?)Players[CurrentPlayerIndex];
+        if (currentPlayer == null) {
+            return null;
+        }
+
+        Card chosenCard = currentPlayer.Hand[cardIndex];
+        currentPlayer.Hand.RemoveAt(cardIndex);
+        Discard.Push(chosenCard);
+
+        if (Deck.IsEmpty) {
+            Card? discardCard;
+            while (Discard.TryPop(out discardCard)) {
+                Deck.Push(discardCard);
+            }
+            Deck.OrderBy(x => _random.Next());
+        }
+
+        if (currentPlayer.Hand.Count == 0) {
+            Winner = currentPlayer;
+        }
+
+        return chosenCard;
     }
 }

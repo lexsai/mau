@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using mao.GameLogic;
 using mao.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -41,7 +40,7 @@ public class LobbyInGame : ILobbyState {
 
         foreach (PlayerState player in _gameState.Players) {
             IGameHub connection = _lobby.Users[player.ConnectionId].Connection;
-            await connection.StartGame(player.Hand);
+            await connection.StartGame(player.Hand.Select(c => c.ToString()).ToList());
         }
 
         _ = Task.Run(GameLoop);
@@ -61,21 +60,40 @@ public class LobbyInGame : ILobbyState {
             User currentUser = _lobby.Users[currentPlayer.ConnectionId];
             IGameHub userConnection = currentUser.Connection;
 
+            int cardIndex = 0;
+
             CancellationTokenSource cancellationTokenSource = new();
             cancellationTokenSource.CancelAfter(5 * 1000);
             try {
-                int x = await userConnection.RequestCard(cancellationTokenSource.Token);
-                await _lobby.Group.WriteMessage($"{currentUser.Name} played the card {x}");
+                int chosenCardIndex = 0;
+                bool success = int.TryParse(await userConnection.RequestCard(cancellationTokenSource.Token), out chosenCardIndex);
+                if (success && chosenCardIndex < currentPlayer.Hand.Count && chosenCardIndex >= 0) {
+                    cardIndex = chosenCardIndex;
+                }
+                await _lobby.Group.WriteMessage($"{currentUser.Name} has chosen hand index {cardIndex}");
             } catch {
                 await _lobby.Group.WriteMessage($"No input received from {currentUser.Name}");
             } finally {
                 cancellationTokenSource.Dispose();
             }
 
+            Card? card = _gameState.PlayCard(cardIndex);
+            if (card == null) {
+                return;
+            }
+
+            await userConnection.HandUpdate(currentPlayer.Hand.Select(c => c.ToString()).ToList());
+            await _lobby.Group.PlayedCardUpdate(card.ToString());
+
+            if (_gameState.Winner != null) {
+                _lobby.Winner = _lobby.Users[_gameState.Winner.ConnectionId];
+                await _lobby.ChangeState(_lobby.FinishedState);
+                return;
+            }
+
             _gameState.EndTurn();
 
-            await Task.Delay(500);
+            await Task.Delay(3000);
         }
-
     }
 }

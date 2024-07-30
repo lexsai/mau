@@ -26,7 +26,7 @@ public class GameHub: Hub<IGameHub> {
         CancellationTokenSource cancellationTokenSource = new();
         cancellationTokenSource.CancelAfter(5 * 1000);
         try {
-            int x = await Clients.Client(Context.ConnectionId).RequestCard(cancellationTokenSource.Token);
+            string x = await Clients.Client(Context.ConnectionId).RequestCard(cancellationTokenSource.Token);
             await Clients.Client(Context.ConnectionId).WriteMessage($"Card acknowledged: {x}");
         } catch {
             await Clients.Client(Context.ConnectionId).WriteMessage("No input received");
