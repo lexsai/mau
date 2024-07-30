@@ -29,13 +29,27 @@ public class GameState {
     }
 
     private void GenerateDeck() {
-        Deck.Clear();
+        List<Card> tmpList = new();
         foreach (CardRank rank in Enum.GetValues<CardRank>()) {
             foreach (CardSuit suit in Enum.GetValues<CardSuit>()) {
-                Deck.Push(new Card(suit, rank));
+                tmpList.Add(new Card(suit, rank));
             }
         }
-        Deck.OrderBy(x => _random.Next());
+        Deck.Clear();
+        foreach (Card card in tmpList.OrderBy(x => _random.Next())) {
+            Deck.Push(card);
+        }
+    }
+
+    public void ShuffleDiscardToDeck() {
+        List<Card> tmpList = new();
+        Card? discardCard;
+        while (Discard.TryPop(out discardCard)) {
+            tmpList.Add(discardCard);
+        }
+        foreach (Card card in tmpList.OrderBy(x => _random.Next())) {
+            Deck.Push(card);
+        }
     }
 
     private void DealToPlayers() {
@@ -57,6 +71,13 @@ public class GameState {
         }
     }
 
+    public void Draw(PlayerState player) {
+        Card? topCard;
+        if (Deck.TryPop(out topCard)) {
+            player.Hand.Add(topCard);
+        }
+    }
+
     public Card? PlayCard(int cardIndex) {
         PlayerState? currentPlayer = (PlayerState?)Players[CurrentPlayerIndex];
         if (currentPlayer == null) {
@@ -68,11 +89,7 @@ public class GameState {
         Discard.Push(chosenCard);
 
         if (Deck.IsEmpty) {
-            Card? discardCard;
-            while (Discard.TryPop(out discardCard)) {
-                Deck.Push(discardCard);
-            }
-            Deck.OrderBy(x => _random.Next());
+            ShuffleDiscardToDeck();
         }
 
         if (currentPlayer.Hand.Count == 0) {

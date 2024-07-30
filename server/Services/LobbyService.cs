@@ -19,8 +19,8 @@ public class LobbyService {
     public LobbyFinished FinishedState { get; }
     public ILobbyState State { get; set; }
 
-    private readonly CancellationTokenSource _completedCts = new();
-    public CancellationToken Completed => _completedCts.Token;
+    public CancellationTokenSource CompletedCts { get; set; } = new();
+    public CancellationToken Completed => CompletedCts.Token;
 
     public List<string> UserNames { get => Users.Values.Select(p => p.Name).ToList(); }
 
@@ -98,7 +98,7 @@ public class LobbyService {
         await Group.LobbyUsersUpdate(string.Join(", ", UserNames));
 
         if (Users.Count == 0) {
-            _completedCts.Cancel();
+            CompletedCts.Cancel();
         }
     }
 }

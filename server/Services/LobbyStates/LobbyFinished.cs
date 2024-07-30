@@ -35,5 +35,8 @@ public class LobbyFinished : ILobbyState {
         } else {
             await _lobby.Group.WriteMessage($"Finished. The winner was {_lobby.Winner.Name}");
         }
+
+        await Task.Delay(10000);
+        _lobby.CompletedCts.Cancel();
     }
 }
