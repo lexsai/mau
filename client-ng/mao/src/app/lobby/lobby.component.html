@@ -1,0 +1,12 @@
+@if ((playerName() | async) == '') {
+    <p>you are joining an existing lobby! please select a name</p>
+    <input #playerName>
+    <button (click)="start(playerName.value)">Start</button>
+} @else {
+    <p>hi '{{ playerName() | async }}', visiting this link will let others join your lobby: {{ shareUrl }}</p>
+    <ul>
+    @for (member of lobbyMembers; track $index) {
+        <li>{{ member }}</li>
+    }
+    </ul>
+}

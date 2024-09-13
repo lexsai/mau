@@ -15,10 +15,6 @@ public class LobbyWaiting : ILobbyState {
     }
 
     public async Task StartGame() {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         await _lobby.ChangeState(_lobby.InGameState);
     }
 

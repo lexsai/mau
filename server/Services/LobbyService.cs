@@ -3,12 +3,13 @@ using mao.Hubs;
 using mao.GameLogic;
 using mao.Services.LobbyStates;
 using Microsoft.AspNetCore.SignalR;
+using mao.Utils;
 
 namespace mao.Services;
 
 public class LobbyService {
-    public IGameHub? Group { get; private set; }
-    public string? Name { get; private set; }
+    public IGameHub Group { get; private set; }
+    public string Name { get; private set; }
     public ConcurrentDictionary<string, User> Users { get; }= new();
     public User? Winner { get; set; }
 
@@ -27,20 +28,14 @@ public class LobbyService {
     public LobbyService(IHubContext<GameHub, IGameHub> hubContext) {
         _hubContext = hubContext;
 
+        Name = LobbyNameGenerator.GenerateLobbyName();
+        Group = _hubContext.Clients.Group(Name);
+
         WaitingState = new(this);
         InGameState = new(this);
         FinishedState = new(this);
 
         State = WaitingState;
-    }
-
-    public void Init(string lobbyName) {
-        if (Group != null && Name != null) {
-            return;
-        }
-
-        Name = lobbyName;
-        Group = _hubContext.Clients.Group(lobbyName);
     }
 
     public async Task ChangeState(ILobbyState newState) {
@@ -57,10 +52,6 @@ public class LobbyService {
     }
 
     public async Task AddUser(HubCallerContext hubCallerContext, string userName) {
-        if (Group == null || Name == null) {
-            return;
-        }
-
         string connectionId = hubCallerContext.ConnectionId;
         IGameHub connection =_hubContext.Clients.Client(connectionId);
 
@@ -77,7 +68,7 @@ public class LobbyService {
         if (Users.TryAdd(connectionId, new User(connection, userName, connectionId))) {
             await _hubContext.Groups.AddToGroupAsync(connectionId, Name);
 
-            await Group.LobbyUsersUpdate(string.Join(", ", UserNames));
+            await Group.LobbyUsersUpdate(UserNames);
 
             hubCallerContext.ConnectionAborted.Register(async () => await RemoveUser(connectionId));
 
@@ -90,12 +81,8 @@ public class LobbyService {
     }
 
     public async Task RemoveUser(string connectionId) {
-        if (Group == null) {
-            return;
-        }
-
         Users.TryRemove(connectionId, out _);
-        await Group.LobbyUsersUpdate(string.Join(", ", UserNames));
+        await Group.LobbyUsersUpdate(UserNames);
 
         if (Users.Count == 0) {
             CompletedCts.Cancel();

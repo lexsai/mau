@@ -10,26 +10,14 @@ public class LobbyFinished : ILobbyState {
     }
 
     public async Task JoinGame(HubCallerContext hubCallerContext, string userName) {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         await _lobby.Group.WriteMessage("Can't join because lobby is finished.");
     }
 
     public async Task StartGame() {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         await _lobby.Group.WriteMessage("Game has already started and finished.");
     }
 
     public async Task OnStateChange() {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         if (_lobby.Winner == null) {
             await _lobby.Group.WriteMessage("Finished with no winner.");
         } else {

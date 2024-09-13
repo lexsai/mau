@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using mao.Hubs;
+using mao.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace mao.Services;
@@ -35,27 +36,17 @@ public class LobbyManagerService {
         }
     }
 
-    public async Task CreateLobby(HubCallerContext hubCallerContext, string lobbyName, string userName) {
-        string connectionId = hubCallerContext.ConnectionId;
-        IGameHub connection = _hubContext.Clients.Client(connectionId);
-
-        if (lobbyName.Length >= 20 || lobbyName.Length == 0) {
-            await connection.WriteMessage("Invalid lobby name.");
-            return;
-        }
-
-        if (_lobbies.ContainsKey(lobbyName)) {
-            await connection.WriteMessage("Lobby already exists with chosen name.");
-            return;
-        }
-
+    public CreatedLobby CreateLobby() {
         LobbyService lobby = _serviceProvider.GetRequiredService<LobbyService>();
-        lobby.Init(lobbyName);
+        _lobbies.TryAdd(lobby.Name, lobby);
+        lobby.Completed.Register(() => _lobbies.TryRemove(lobby.Name, out _));
+        
+        return new CreatedLobby {
+            Name = lobby.Name
+        };
+    }
 
-        _lobbies.TryAdd(lobbyName, lobby);
-
-        lobby.Completed.Register(() => _lobbies.TryRemove(lobbyName, out _));
-
-        await JoinLobby(hubCallerContext, lobbyName, userName);
+    public bool HasLobby(string lobbyName) {
+        return _lobbies.ContainsKey(lobbyName);
     }
 }

@@ -14,26 +14,14 @@ public class LobbyInGame : ILobbyState {
     }
 
     public async Task JoinGame(HubCallerContext hubCallerContext, string userName) {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         await _lobby.Group.WriteMessage("Can't join because lobby is in-game.");
     }
 
     public async Task StartGame() {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         await _lobby.Group.WriteMessage("Game has already started.");
     }
 
     public async Task OnStateChange() {
-        if (_lobby.Group == null) {
-            return;
-        }
-
         await _lobby.Group.WriteMessage($"Game started for {_lobby.Name}!");
 
         _gameState = new GameState(_lobby.Users);
@@ -47,7 +35,7 @@ public class LobbyInGame : ILobbyState {
     }
 
     public async Task GameLoop() {
-        if (_gameState == null || _lobby.Group == null) {
+        if (_gameState == null) {
             return;
         }
 
