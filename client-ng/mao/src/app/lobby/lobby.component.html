@@ -1,12 +1,28 @@
-@if ((playerName() | async) == '') {
+@if ((playerName$ | async) == '') {
     <p>you are joining an existing lobby! please select a name</p>
     <input #playerName>
-    <button (click)="start(playerName.value)">Start</button>
+    <button (click)="joinLobby(playerName.value)">Join</button>
 } @else {
-    <p>hi '{{ playerName() | async }}', visiting this link will let others join your lobby: {{ shareUrl }}</p>
-    <ul>
-    @for (member of lobbyMembers; track $index) {
-        <li>{{ member }}</li>
+    @switch (gameState$ | async) {
+        @case (gameStates.Waiting) {
+            <p>hi '{{ playerName$ | async }}', visiting this link will let others join your lobby: {{ shareUrl }}</p>
+            
+            <button (click)="start()">Start Game</button>
+        
+            <h2>member list</h2>
+            <ul>
+            @for (member of (lobbyMembers$ | async); track $index) {
+                <li>{{ member }}</li>
+            }
+            </ul>
+        }
+        @case (gameStates.InGame) {
+            @for (card of (hand$ | async); track $index) {
+                <li>{{ card }}</li>
+            }
+
+            <p>in game !</p>   
+        }
     }
-    </ul>
 }
+<p>message: {{ message$ | async }}</p>

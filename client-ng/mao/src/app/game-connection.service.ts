@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { Observable } from 'rxjs';
+import { GameDataService, GameState } from './game-data.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +9,7 @@ import { Observable } from 'rxjs';
 export class GameConnectionService {
   private hubConnection: HubConnection;
 
-  constructor() { 
+  constructor(private gameData: GameDataService) { 
     this.hubConnection = new HubConnectionBuilder()
       .withUrl("http://localhost:5000/game")
       .build();
@@ -25,19 +26,24 @@ export class GameConnectionService {
         }).catch((error) => {
           console.error('error connecting to hub:', error);
           observer.error(error);
-        })
-    })
+        });
+      this.gameData.subscribe(this);
+    });
   }
 
   joinLobby(lobbyName: string, playerName$: string) {
     this.hubConnection.invoke('JoinLobby', lobbyName, playerName$);
   }
 
-  receiveLobbyUsersUpdate() {
-    return new Observable<string[]>((observer) => {
-      this.hubConnection.on('LobbyUsersUpdate', (users: string[]) => {
+  startGame() {
+    this.hubConnection.invoke('StartGame');
+  }
+
+  receiveUpdate<T>(eventName: string) {
+    return new Observable<T>((observer) => {
+      this.hubConnection.on(eventName, (users: T) => {
         observer.next(users);
       })
-    })
+    });
   }
 }

@@ -17,10 +17,10 @@ export class OutComponent {
     private gameData: GameDataService,
     private router: Router) {}
   
-  createLobby(playerName$: string) {
+  createLobby(playerName: string) {
     this.http.post<LobbyCreated>("http://localhost:5000/lobby/start", {}).subscribe(
       response => {   
-        this.gameData.playerName$.next(playerName$);
+        this.gameData.playerName$.next(playerName);
         
         this.router.navigate(['/lobby/' + response.name]);
       }

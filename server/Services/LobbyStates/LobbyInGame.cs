@@ -28,7 +28,7 @@ public class LobbyInGame : ILobbyState {
 
         foreach (PlayerState player in _gameState.Players) {
             IGameHub connection = _lobby.Users[player.ConnectionId].Connection;
-            await connection.StartGame(player.Hand.Select(c => c.ToString()).ToList());
+            await connection.GameStarted(player.Hand.Select(c => c.ToString()).ToList());
         }
 
         _ = Task.Run(GameLoop);
