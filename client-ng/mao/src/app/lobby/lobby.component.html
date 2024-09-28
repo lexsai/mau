@@ -5,7 +5,7 @@
 } @else {
     @switch (gameState$ | async) {
         @case (gameStates.Waiting) {
-            <p>hi '{{ playerName$ | async }}', visiting this link will let others join your lobby: {{ shareUrl }}</p>
+            <p>hi '{{ playerName$ | async }}', invite others to the lobby with this link: <a [href]="shareUrl">{{ shareUrl }}</a></p>
             
             <button (click)="start()">Start Game</button>
         
@@ -17,11 +17,16 @@
             </ul>
         }
         @case (gameStates.InGame) {
+            <div class="hand">
             @for (card of (hand$ | async); track $index) {
-                <li>{{ card }}</li>
+                <app-card 
+                    [cardName]="card"
+                    [awaitingInput$]="awaitingInput$"
+                    (played)="input($index)"></app-card>
             }
+            </div>
 
-            <p>in game !</p>   
+            <p>in game as {{ playerName$ | async }}!</p>   
         }
     }
 }

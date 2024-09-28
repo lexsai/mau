@@ -1,11 +1,18 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, first, timeout } from 'rxjs';
 import { GameConnectionService } from './game-connection.service';
 
 export enum GameState {
   Waiting,
   InGame
 }
+
+const until = (predFn: Function, timeout: number) => {
+  let timeoutElapsed = false;
+  setTimeout(() => timeoutElapsed = true, timeout);
+  const poll = (done: Function) => (predFn() || timeoutElapsed ? done() : setTimeout(() => poll(done), 500));
+  return new Promise(poll);
+};
 
 @Injectable({
   providedIn: 'root'

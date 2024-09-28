@@ -1,0 +1,6 @@
+<div class="card">
+    <img [src]="'/assets/fronts/' + cardName + '.svg'" style="max-width:120px;">
+    @if (awaitingInput$ | async) {
+        <button (click)="played.emit()">PLAY</button>
+    }
+</div>

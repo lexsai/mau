@@ -67,8 +67,12 @@ public class LobbyInGame : ILobbyState {
                     bool success = int.TryParse(receivedCard, out chosenCardIndex);
                     if (success && chosenCardIndex < currentPlayer.Hand.Count && chosenCardIndex >= 0) {
                         cardIndex = chosenCardIndex;
+                        await receivedConnection.WriteMessage($"Great choice to play a card! It was your turn.");
+                    } else {
+                        _gameState.Draw(receivedPlayer);
+                        _gameState.Draw(receivedPlayer);
+                        await receivedConnection.WriteMessage($"Penalty! It was your turn to play a card.");
                     }
-                    await receivedConnection.WriteMessage($"Great choice to play a card! It was your turn.");
                 } else if (receivedCard != null) {
                     _gameState.Draw(receivedPlayer);
                     _gameState.Draw(receivedPlayer);

@@ -10,7 +10,13 @@ public class Card {
     }
     public override string ToString()
     {
-        return $"{Rank} of {Suit}";
+        string rankString;
+        if ((int)Rank >= 1 && (int)Rank < 10) {
+            rankString = (((int)Rank) + 1).ToString();
+        } else {
+            rankString = Rank.ToString().ToLower();
+        }
+        return $"{Suit.ToString().ToLower()}_{rankString}";
     }
 }
 

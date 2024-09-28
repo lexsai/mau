@@ -6,11 +6,12 @@ import { BehaviorSubject } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { LobbyExists } from '../models/lobby-exists';
+import { CardComponent } from "../card/card.component";
 
 @Component({
   selector: 'app-lobby',
   standalone: true,
-  imports: [AsyncPipe],
+  imports: [AsyncPipe, CardComponent],
   templateUrl: './lobby.component.html',
   styleUrl: './lobby.component.css'
 })
@@ -19,6 +20,7 @@ export class LobbyComponent {
   public shareUrl = '';
 
   public gameStates = GameState;
+  public parseInt = parseInt;
 
   constructor(
     private gameConnection: GameConnectionService,
@@ -32,16 +34,15 @@ export class LobbyComponent {
     this.shareUrl = location.origin + location.pathname;
 
     const lobbyName = this.activatedRoute.snapshot.params['name'];
-    this.http.post<LobbyExists>("http://localhost:5000/lobby/exists", { name: lobbyName }).subscribe(
-      response => {
+    this.http.post<LobbyExists>("http://localhost:5000/lobby/exists", { name: lobbyName })
+      .subscribe(response => {
         if (!response.exists) {
           this.router.navigate(['/']);
         } else if (this.gameData.playerName$.getValue() != '') {
           // playerName must have already been set from '/'.
           this.joinLobby(this.gameData.playerName$.getValue());
         }
-      }
-    );
+      });
   }
 
   joinLobby(playerName: string) {    
@@ -52,11 +53,15 @@ export class LobbyComponent {
       const lobbyName = this.activatedRoute.snapshot.params['name'];
       this.gameConnection.joinLobby(lobbyName, playerName);
     });
-
   }
 
   start() {
     this.gameConnection.startGame();
+  }
+
+  input(cardInput: number) {
+    console.log("input", cardInput);
+    this.gameConnection.setCardInput(cardInput);
   }
 
   get playerName$(): BehaviorSubject<string> {
@@ -77,5 +82,9 @@ export class LobbyComponent {
 
   get message$(): BehaviorSubject<string> {
     return this.gameData.message$;
+  }
+
+  get awaitingInput$(): BehaviorSubject<boolean> {
+    return this.gameConnection.awaitingInput$;
   }
 }
