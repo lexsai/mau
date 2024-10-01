@@ -24,6 +24,7 @@ export class GameDataService {
   public lobbyMembers$ = new BehaviorSubject<string[]>([]);
   public hand$ = new BehaviorSubject<string[]>([]);
   public message$ = new BehaviorSubject<string>('');
+  public lastPlayedCard$ = new BehaviorSubject<string>('');
 
   constructor() { }
 
@@ -40,6 +41,10 @@ export class GameDataService {
 
     conn.receiveUpdate<string[]>('HandUpdate').subscribe((hand: string[]) => {
       this.hand$.next(hand);
+    });
+
+    conn.receiveUpdate<string>('PlayedCardUpdate').subscribe((card: string) => {
+      this.lastPlayedCard$.next(card);
     });
 
     conn.receiveUpdate<string>('WriteMessage').subscribe((message: string) => {

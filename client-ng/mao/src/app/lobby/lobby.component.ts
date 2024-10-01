@@ -87,4 +87,8 @@ export class LobbyComponent {
   get awaitingInput$(): BehaviorSubject<boolean> {
     return this.gameConnection.awaitingInput$;
   }
+
+  get lastPlayedCard$(): BehaviorSubject<string> {
+    return this.gameData.lastPlayedCard$;
+  }
 }
