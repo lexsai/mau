@@ -19,7 +19,12 @@ public class LobbyManagerService {
     }
 
     public async Task JoinLobby(HubCallerContext hubCallerContext, string lobbyName, string userName) {
-        await _lobbies[lobbyName].JoinGame(hubCallerContext, userName);
+        IGameHub connection = _hubContext.Clients.Client(hubCallerContext.ConnectionId);
+        if (_lobbies.ContainsKey(lobbyName)) {
+            await _lobbies[lobbyName].JoinGame(hubCallerContext, userName);
+        } else {
+            await connection.WriteMessage("Tried to join lobby that does not exist.");
+        }
     }
 
     public async Task StartGame(HubCallerContext hubCallerContext) {

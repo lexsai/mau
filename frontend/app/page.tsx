@@ -3,6 +3,7 @@
 import Form from "next/form";
 import { cookies } from "next/headers";
 import MainMenu from "./main";
+import Link from "next/link";
 
 export default async function Home() {
   const cookieStore = await cookies();
@@ -20,13 +21,13 @@ export default async function Home() {
     )
   } else {
     return (
-      <div className="bg-red-500 flex h-screen">
+      <div className="bg-red-700 flex h-screen">
         <div className="absolute top-[45%] left-[50%] transform translate-x-[-50%] translate-y-[-50%] text-center flex flex-col">
-          <div className="text-white text-5xl py-2">mau</div>
+          <Link href="/" className="text-white text-5xl py-2">mau</Link>
           <Form action={getName}>
             <div className="text-white text-1xl">Enter a name:</div>
-            <input name="name" />
-            <button type="submit" className="text-white bg-red-700 hover:bg-red-800 px-5 py-1 my-2">Submit</button>
+            <input name="name" className="text-black" />
+            <button type="submit" className="text-black bg-red-200 hover:bg-red-400 px-5 my-2">Submit</button>
           </Form>
         </div>
       </div>

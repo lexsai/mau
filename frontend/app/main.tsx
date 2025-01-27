@@ -15,11 +15,11 @@ export default function MainMenu() {
   }
 
   return (
-    <div className="bg-red-500 flex h-screen">
+    <div className="bg-red-700 flex h-screen">
       <div className="absolute top-[45%] left-[50%] transform translate-x-[-50%] translate-y-[-50%] text-center flex flex-col">
-        <div className="text-white text-5xl py-2">mau</div>
-        <button onClick={createGame} className="text-white bg-red-700 hover:bg-red-800 px-5 py-1 my-2">create lobby</button>
-        <Link href="/lobby" className="text-white bg-red-700 hover:bg-red-800 px-5 py-1">join lobby</Link>
+        <Link href="/" className="text-white text-5xl py-2">mau</Link>
+        <button onClick={createGame} className="text-black bg-red-200 hover:bg-red-400 px-5 py-1 my-2">create lobby</button>
+        <Link href="/lobby" className="text-black bg-red-200 hover:bg-red-400 px-5 py-1">join lobby</Link>
       </div>
     </div>
   )
