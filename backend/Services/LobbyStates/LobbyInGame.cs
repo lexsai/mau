@@ -49,7 +49,7 @@ public class LobbyInGame : ILobbyState {
             IGameHub userConnection = currentUser.Connection;
 
             CancellationTokenSource cancellationTokenSource = new();
-            cancellationTokenSource.CancelAfter(5000);
+            cancellationTokenSource.CancelAfter(6000);
 
             List<Task<(PlayerState, string?)>> cardRequests = new(_gameState.Players.Count);
             foreach (PlayerState player in _gameState.Players) {
@@ -108,6 +108,7 @@ public class LobbyInGame : ILobbyState {
     private async Task<(PlayerState, string?)> RequestCardWrapper(PlayerState player, CancellationToken cancellationToken) {
         IGameHub userConnection = _lobby.Users[player.ConnectionId].Connection;
         try {
+            await userConnection.WriteMessage("A new turn begins.");
             string card = await userConnection.RequestCard(cancellationToken);
             return (player, card);
         }

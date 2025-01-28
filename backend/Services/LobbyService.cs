@@ -62,6 +62,7 @@ public class LobbyService {
 
         if (Users.ContainsKey(connectionId) || UserNames.Contains(userName)) {
             await connection.WriteMessage("User is already in the lobby.");
+            System.Diagnostics.Debug.WriteLine("Hi");
             return;
         }
 
