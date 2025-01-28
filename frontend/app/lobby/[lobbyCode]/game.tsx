@@ -30,6 +30,7 @@ export default function Game({ playerName } : { playerName: string }) {
   const [lastPlayedCard, setLastPlayedCard] = useState<string>('');
   
   const [awaitingInput, setAwaitingInput] = useState<boolean>(false);
+  const [selectedCard, setSelectedCard] = useState<number>(-1);
  
   useEffect(() => {
     setShareUrl(`${window.location.origin}/lobby/${lobbyCode}`);
@@ -49,6 +50,7 @@ export default function Game({ playerName } : { playerName: string }) {
 
     conn.on('PlayedCardUpdate', (data) => {
       setLastPlayedCard(data);
+      setSelectedCard(-1);
     })
 
     conn.on('WriteMessage', (data) => {
@@ -65,7 +67,6 @@ export default function Game({ playerName } : { playerName: string }) {
     conn.on('RequestCard', async () => {
       setAwaitingInput(true);
       await until(() => cardInput != -1, 5000);
-      setAwaitingInput(false);
       
       let tmpInput = cardInput;
       cardInput = -1;
@@ -86,7 +87,13 @@ export default function Game({ playerName } : { playerName: string }) {
   }
   
   function playCard(index: number) {
+    if (!awaitingInput) {
+      return;
+    }
+
     console.log("clicked", index);
+    setSelectedCard(index);
+    setAwaitingInput(false);
     cardInput = index;
   }
 
@@ -125,7 +132,8 @@ export default function Game({ playerName } : { playerName: string }) {
             <br />
             <div className="font-bold">Hand:</div>
             <div className="flex flex-wrap items-center justify-center max-w-4xl">
-             {hand.map((card, index) => <Card value={card} onClick={() => playCard(index)} key={index} />)}
+             {hand.map((card, index) => <Card highlight={selectedCard === index} 
+                                              value={card} onClick={() => playCard(index)} key={index} />)}
             </div>
           </div>
         </div>

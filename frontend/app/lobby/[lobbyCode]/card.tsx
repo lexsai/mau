@@ -4,16 +4,17 @@ import Image from "next/image";
 import { MouseEventHandler } from "react";
 
 export default function Card(
-  { value, onClick } : {
+  { value, onClick, highlight } : {
     value: string, 
-    onClick: MouseEventHandler
+    onClick: MouseEventHandler,
+    highlight: boolean
   }
 ) {
   return (
       <Image 
         alt={value} 
         src={`/fronts/${value}.svg`}
-        className="cursor-pointer"
+        className={"cursor-pointer" + (highlight ? " p-2" : "")}
         onClick={onClick} 
         width={100} height={100} />
   )
