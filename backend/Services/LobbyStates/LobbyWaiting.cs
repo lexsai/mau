@@ -18,6 +18,10 @@ public class LobbyWaiting : ILobbyState {
         await _lobby.ChangeState(_lobby.InGameState);
     }
 
+    public async Task SendChat(HubCallerContext hubCallerContext, string message) {
+        await _lobby.Group.WriteMessage("send chat yup");
+    }
+
     public async Task OnStateChange() {
         await Task.FromResult(0);
     }

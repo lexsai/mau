@@ -9,6 +9,8 @@ public class GameState {
     public ConcurrentStack<Card> Discard { get; set; } = new();
 
     public ArrayList Players { get; } = ArrayList.Synchronized(new ArrayList());
+    public ArrayList Messages { get; } = ArrayList.Synchronized(new ArrayList());
+
 
     public int CurrentPlayerIndex { get; private set; }
 

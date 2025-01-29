@@ -51,6 +51,10 @@ public class LobbyService {
         await State.StartGame();
     }
 
+    public async Task SendChat(HubCallerContext hubCallerContext, string message) {
+        await State.SendChat(hubCallerContext, message);
+    }
+
     public async Task AddUser(HubCallerContext hubCallerContext, string userName) {
         string connectionId = hubCallerContext.ConnectionId;
         IGameHub connection =_hubContext.Clients.Client(connectionId);

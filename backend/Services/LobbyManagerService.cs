@@ -41,6 +41,21 @@ public class LobbyManagerService {
         }
     }
 
+
+    public async Task SendChat(HubCallerContext hubCallerContext, string message) {
+        IGameHub connection = _hubContext.Clients.Client(hubCallerContext.ConnectionId);
+
+        if (!hubCallerContext.Items.ContainsKey(LobbyKey)) {
+            await connection.WriteMessage("Not in a lobby.");
+            return;
+        }
+
+        LobbyService? lobby = (LobbyService?)hubCallerContext.Items[LobbyKey];
+        if (lobby != null) {
+            await lobby.SendChat(hubCallerContext, message);
+        }
+    }
+
     public CreatedLobby CreateLobby() {
         LobbyService lobby = _serviceProvider.GetRequiredService<LobbyService>();
         _lobbies.TryAdd(lobby.Name, lobby);

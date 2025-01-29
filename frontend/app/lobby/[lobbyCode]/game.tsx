@@ -70,6 +70,7 @@ export default function Game({ playerName } : { playerName: string }) {
       
       let tmpInput = cardInput;
       cardInput = -1;
+      console.log(tmpInput);
       return tmpInput.toString();
     })
 
@@ -120,21 +121,23 @@ export default function Game({ playerName } : { playerName: string }) {
   } else {
     return (
       <div className="bg-red-700 flex h-screen">
-        <div className="absolute top-[5%] left-[50%] transform translate-x-[-50%] text-center flex flex-col">
-          <div>
+        <div className="absolute top-[5%] left-[50%] transform translate-x-[-50%] text-center flex">
+          <div className="flex text-center flex-col w-[600px] shrink-0">
             {(lastPlayedCard !== '') && <div>
               <div className="font-bold">Last Played:</div>
               <Image className="mx-auto " src={`/fronts/${lastPlayedCard}.svg`} alt={lastPlayedCard} width={100} height={100} />
             </div>}
             <br />
             <div className="font-bold">{message}</div>
-            <div className="font-bold">{awaitingInput ? "Select a card, or pass.": "..."}</div>
             <br />
             <div className="font-bold">Hand:</div>
-            <div className="flex flex-wrap items-center justify-center max-w-4xl">
+            <div className="flex flex-wrap items-center justify-center max-w-3xl">
              {hand.map((card, index) => <Card highlight={selectedCard === index} 
                                               value={card} onClick={() => playCard(index)} key={index} />)}
             </div>
+          </div>
+          <div className="mx-10">
+            <div className="bg-white w-[600px] text-black h-96 p-2">Text</div>
           </div>
         </div>
       </div>

@@ -13,6 +13,10 @@ public class LobbyFinished : ILobbyState {
         await _lobby.Group.WriteMessage("Can't join because lobby is finished.");
     }
 
+    public async Task SendChat(HubCallerContext hubCallerContext, string message) {
+        await _lobby.Group.WriteMessage("send chat.");
+    }
+
     public async Task StartGame() {
         await _lobby.Group.WriteMessage("Game has already started and finished.");
     }

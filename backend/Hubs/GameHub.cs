@@ -18,6 +18,10 @@ public class GameHub: Hub<IGameHub> {
         await _lobbyManager.StartGame(Context);
     }
 
+    public async Task SendChat(string message) {
+        await _lobbyManager.SendChat(Context, message);
+    }
+
     // public async Task Test() {
     //     CancellationTokenSource cancellationTokenSource = new();
     //     cancellationTokenSource.CancelAfter(5 * 1000);

@@ -20,6 +20,11 @@ public class LobbyInGame : ILobbyState {
     public async Task StartGame() {
         await _lobby.Group.WriteMessage("Game has already started.");
     }
+    
+    public async Task SendChat(HubCallerContext hubCallerContext, string message) {
+        _gameState?.Messages.Add(new ChatMessage(message));
+        await _lobby.Group.ChatMessage(message);
+    }
 
     public async Task OnStateChange() {
         await _lobby.Group.WriteMessage($"Game started for {_lobby.Name}!");
@@ -32,6 +37,26 @@ public class LobbyInGame : ILobbyState {
         }
 
         _ = Task.Run(GameLoop);
+    }
+
+    public async Task CheckMessageSent() {
+        if (_gameState == null) {
+            return;
+        }
+
+        await Task.Delay(5000);
+        
+        bool messageSent = false;
+        foreach (ChatMessage message in _gameState.Messages) {
+            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - message.TimeSent <= 5) {
+                messageSent = true;
+            }
+        }
+
+        if (!messageSent) {
+            PlayerState? currentPlayer = (PlayerState?)_gameState.Players[_gameState.CurrentPlayerIndex];
+            _gameState.Draw(currentPlayer);
+        }
     }
 
     public async Task GameLoop() {
@@ -59,39 +84,43 @@ public class LobbyInGame : ILobbyState {
 
             cancellationTokenSource.Dispose();
 
-            int cardIndex = 0;
+            int cardIndex = -1;
             foreach ((PlayerState receivedPlayer, string? receivedCard) in cardRequests.Select(r => r.Result)) {
                 IGameHub receivedConnection = _lobby.Users[receivedPlayer.ConnectionId].Connection;
                 if (receivedPlayer.ConnectionId == currentPlayer.ConnectionId) {
-                    int chosenCardIndex = 0;
+                    int chosenCardIndex = -1;
                     bool success = int.TryParse(receivedCard, out chosenCardIndex);
                     if (success && chosenCardIndex < currentPlayer.Hand.Count && chosenCardIndex >= 0) {
                         cardIndex = chosenCardIndex;
-                        await receivedConnection.WriteMessage($"Great choice to play a card! It was your turn.");
+                        await receivedConnection.WriteMessage($"...");
                     } else {
                         _gameState.Draw(receivedPlayer);
                         _gameState.Draw(receivedPlayer);
-                        await receivedConnection.WriteMessage($"Penalty! It was your turn to play a card.");
+                        await receivedConnection.WriteMessage($"+1 card. It was your turn to play a card.");
                     }
-                } else if (receivedCard != null) {
+                } else if (receivedCard != "-1") {
                     _gameState.Draw(receivedPlayer);
-                    _gameState.Draw(receivedPlayer);
-                    await receivedConnection.WriteMessage($"Penalty! It was not your turn to play a card. It was {currentUser.Name}'s turn.");
+                    await receivedConnection.WriteMessage($"+1 card. It was {currentUser.Name}'s turn to play a card.");
                 } else {
-                    await receivedConnection.WriteMessage($"Great choice to play nothing! It was not your turn, but {currentUser.Name}'s turn.");
+                    await receivedConnection.WriteMessage($"... It was {currentUser.Name}'s turn.");
                 }
             }
 
-            Card? card = _gameState.PlayCard(cardIndex);
-            if (card == null) {
-                return;
+            if (cardIndex != -1) {
+                Card? card = _gameState.PlayCard(cardIndex);
+                if (card == null) {
+                    return;
+                }
+                await _lobby.Group.PlayedCardUpdate(card.ToString());
+                if (card.Rank == CardRank.Seven) {
+                    // _ = Task.Run(CheckMessageSent);
+                }
             }
 
             foreach (PlayerState player in _gameState.Players) {
                 IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
                 await playerConnection.HandUpdate(player.Hand.Select(c => c.ToString()).ToList());
             }
-            await _lobby.Group.PlayedCardUpdate(card.ToString());
 
             if (_gameState.Winner != null) {
                 _lobby.Winner = _lobby.Users[_gameState.Winner.ConnectionId];
@@ -108,7 +137,7 @@ public class LobbyInGame : ILobbyState {
     private async Task<(PlayerState, string?)> RequestCardWrapper(PlayerState player, CancellationToken cancellationToken) {
         IGameHub userConnection = _lobby.Users[player.ConnectionId].Connection;
         try {
-            await userConnection.WriteMessage("A new turn begins.");
+            await userConnection.WriteMessage("A new turn begins. Select a card to play or pass.");
             string card = await userConnection.RequestCard(cancellationToken);
             return (player, card);
         }
