@@ -39,7 +39,7 @@ public class LobbyInGame : ILobbyState {
         _ = Task.Run(GameLoop);
     }
 
-    public async Task CheckMessageSent() {
+    public async Task CheckMessageSent(PlayerState player) {
         if (_gameState == null) {
             return;
         }
@@ -54,8 +54,15 @@ public class LobbyInGame : ILobbyState {
         }
 
         if (!messageSent) {
-            PlayerState? currentPlayer = (PlayerState?)_gameState.Players[_gameState.CurrentPlayerIndex];
-            _gameState.Draw(currentPlayer);
+            _gameState.Draw(player);
+            _gameState.Draw(player);
+            _gameState.Draw(player);
+            _gameState.Draw(player);
+            _gameState.Draw(player);
+
+            IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
+            await playerConnection.HandUpdate(player.Hand.Select(c => c.ToString()).ToList());
+            await playerConnection.WriteMessage($"+1 card. Failure to say 'Have a nice day'.");
         }
     }
 
@@ -113,7 +120,9 @@ public class LobbyInGame : ILobbyState {
                 }
                 await _lobby.Group.PlayedCardUpdate(card.ToString());
                 if (card.Rank == CardRank.Seven) {
-                    // _ = Task.Run(CheckMessageSent);
+                    _ = Task.Run(async () => {
+                        await CheckMessageSent(currentPlayer);
+                    });
                 }
             }
 
