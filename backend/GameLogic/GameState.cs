@@ -74,6 +74,9 @@ public class GameState {
     }
 
     public void Draw(PlayerState player) {
+        if (Deck.IsEmpty) {
+            GenerateDeck();
+        }
         Card? topCard;
         if (Deck.TryPop(out topCard)) {
             player.Hand.Add(topCard);

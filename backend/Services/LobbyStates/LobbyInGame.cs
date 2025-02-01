@@ -21,8 +21,11 @@ public class LobbyInGame : ILobbyState {
         await _lobby.Group.WriteMessage("Game has already started.");
     }
     
-    public async Task SendChat(HubCallerContext hubCallerContext, string message) {
-        _gameState?.Messages.Add(new ChatMessage(message));
+    public async Task SendChat(HubCallerContext hubCallerContext, string content) {    
+        User user = _lobby.Users[hubCallerContext.ConnectionId];
+
+        ChatMessage message = new ChatMessage(content, user.Name);
+        _gameState?.Messages.Add(message);
         await _lobby.Group.ChatMessage(message);
     }
 
@@ -39,30 +42,49 @@ public class LobbyInGame : ILobbyState {
         _ = Task.Run(GameLoop);
     }
 
-    public async Task CheckMessageSent(PlayerState player) {
+    public void CheckMessageSent(PlayerState player, string content) {
+        _ = Task.Run(async () => {
+            await CheckMessageSentAsync(player, content);
+        });
+    }
+
+    public async Task CheckMessageSentAsync(PlayerState player, string content) {
         if (_gameState == null) {
             return;
         }
 
         await Task.Delay(5000);
         
+        string userName = _lobby.Users[player.ConnectionId].Name;
+
         bool messageSent = false;
         foreach (ChatMessage message in _gameState.Messages) {
-            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - message.TimeSent <= 5) {
+            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - message.TimeSent <= 5 && 
+                message.Sender == userName && message.Content.ToLower() == content) {
                 messageSent = true;
             }
         }
 
         if (!messageSent) {
-            _gameState.Draw(player);
-            _gameState.Draw(player);
-            _gameState.Draw(player);
-            _gameState.Draw(player);
-            _gameState.Draw(player);
+            IssuePenalty(player, $"Failure to say \"{content}\"");
 
             IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
             await playerConnection.HandUpdate(player.Hand.Select(c => c.ToString()).ToList());
-            await playerConnection.WriteMessage($"+1 card. Failure to say 'Have a nice day'.");
+        }
+    }
+    
+    public void IssuePenalty(PlayerState target, string message) {
+        if (_gameState == null) {
+            return;
+        }
+
+        _gameState.Draw(target);
+        string targetName = _lobby.Users[target.ConnectionId].Name;
+        CheckMessageSent(target, "thank you");
+        
+        foreach (PlayerState player in _gameState.Players) {
+            IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
+            playerConnection.ChatMessage(new ChatMessage($"+1 penalty card to {targetName}. {message}", "The Dealer"));
         }
     }
 
@@ -97,17 +119,14 @@ public class LobbyInGame : ILobbyState {
                 if (receivedPlayer.ConnectionId == currentPlayer.ConnectionId) {
                     int chosenCardIndex = -1;
                     bool success = int.TryParse(receivedCard, out chosenCardIndex);
+                    await receivedConnection.WriteMessage($"...");
                     if (success && chosenCardIndex < currentPlayer.Hand.Count && chosenCardIndex >= 0) {
                         cardIndex = chosenCardIndex;
-                        await receivedConnection.WriteMessage($"...");
                     } else {
-                        _gameState.Draw(receivedPlayer);
-                        _gameState.Draw(receivedPlayer);
-                        await receivedConnection.WriteMessage($"+1 card. It was your turn to play a card.");
+                        IssuePenalty(receivedPlayer, "Failure to play a card during their turn.");
                     }
-                } else if (receivedCard != "-1") {
-                    _gameState.Draw(receivedPlayer);
-                    await receivedConnection.WriteMessage($"+1 card. It was {currentUser.Name}'s turn to play a card.");
+                } else if (receivedCard != "-1" || receivedCard == null) {
+                    IssuePenalty(receivedPlayer, "Playing a card during another player's turn.");
                 } else {
                     await receivedConnection.WriteMessage($"... It was {currentUser.Name}'s turn.");
                 }
@@ -119,10 +138,17 @@ public class LobbyInGame : ILobbyState {
                     return;
                 }
                 await _lobby.Group.PlayedCardUpdate(card.ToString());
+                
                 if (card.Rank == CardRank.Seven) {
-                    _ = Task.Run(async () => {
-                        await CheckMessageSent(currentPlayer);
-                    });
+                    CheckMessageSent(currentPlayer, "have a nice day");
+                }
+                if (card.Rank == CardRank.King) {
+                    CheckMessageSent(currentPlayer, "hail to the chief");
+                    foreach (PlayerState player in _gameState.Players) {
+                        if (player != currentPlayer) {
+                            CheckMessageSent(player, "all hail");
+                        }
+                     }
                 }
             }
 

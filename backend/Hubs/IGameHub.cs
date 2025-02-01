@@ -9,5 +9,5 @@ public interface IGameHub {
     public Task GameStarted(List<string> hand);
     public Task HandUpdate(List<string> hand);
     public Task PlayedCardUpdate(string card);
-    public Task ChatMessage(string message);
+    public Task ChatMessage(ChatMessage message);
 }

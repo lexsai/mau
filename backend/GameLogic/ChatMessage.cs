@@ -1,11 +1,13 @@
 namespace mao.GameLogic;
 
 public class ChatMessage {
-    public string Message { get; }
+    public string Content { get; }
+    public string Sender { get; }
     public long TimeSent { get; }
 
-    public ChatMessage(string message) {
-        Message = message;
+    public ChatMessage(string content, string sender) {
+        Content = content;
+        Sender = sender;
         TimeSent = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
 }

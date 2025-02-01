@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Card from "./card";
 import Image from "next/image";
+import ChatBox, { ChatMessage } from "./chat-message";
 
 const until = (predFn: Function, timeout: number) => {
   let timeoutElapsed = false;
@@ -28,9 +29,9 @@ export default function Game({ playerName } : { playerName: string }) {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [hand, setHand] = useState<string[]>([]);
   const [lastPlayedCard, setLastPlayedCard] = useState<string>('');
-  
   const [awaitingInput, setAwaitingInput] = useState<boolean>(false);
   const [selectedCard, setSelectedCard] = useState<number>(-1);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
  
   useEffect(() => {
     setShareUrl(`${window.location.origin}/lobby/${lobbyCode}`);
@@ -46,11 +47,11 @@ export default function Game({ playerName } : { playerName: string }) {
 
     conn.on('HandUpdate', (data) => {
       setHand(data);
+      setSelectedCard(-1);
     })
 
     conn.on('PlayedCardUpdate', (data) => {
       setLastPlayedCard(data);
-      setSelectedCard(-1);
     })
 
     conn.on('WriteMessage', (data) => {
@@ -72,6 +73,10 @@ export default function Game({ playerName } : { playerName: string }) {
       cardInput = -1;
       console.log(tmpInput);
       return tmpInput.toString();
+    })
+
+    conn.on('ChatMessage', (data) => {
+      setChatMessages((messages) => [...messages, data]);
     })
 
     conn.start().then(() => {
@@ -96,6 +101,10 @@ export default function Game({ playerName } : { playerName: string }) {
     setSelectedCard(index);
     setAwaitingInput(false);
     cardInput = index;
+  }
+
+  function sendChat(content: string) {
+    connection?.invoke('SendChat', content)
   }
 
   if (!gameStarted) {
@@ -137,7 +146,7 @@ export default function Game({ playerName } : { playerName: string }) {
             </div>
           </div>
           <div className="mx-10">
-            <div className="bg-white w-[600px] text-black h-96 p-2">Text</div>
+            <ChatBox playerName={playerName} messages={chatMessages} sendCallback={sendChat} />
           </div>
         </div>
       </div>
