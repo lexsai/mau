@@ -15,7 +15,7 @@ export default {
       keyframes: {
         highlight: {
           '0%': {
-            background: '#8f8',
+            background: '#78ff78',
           },
           '100%': {
             background: 'none',

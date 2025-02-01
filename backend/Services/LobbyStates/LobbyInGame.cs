@@ -99,9 +99,17 @@ public class LobbyInGame : ILobbyState {
             CheckMessageSent(target, "thank you");
         }
         
+        Broadcast($"+1 penalty card to {targetName}. {message}");
+    }
+
+    public void Broadcast(string message) {
+        if (_gameState == null) {
+            return;
+        }
+
         foreach (PlayerState player in _gameState.Players) {
             IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
-            playerConnection.ChatMessage(new ChatMessage($"+1 penalty card to {targetName}. {message}", "The Dealer"));
+            playerConnection.ChatMessage(new ChatMessage(message, "The Dealer"));
         }
     }
 
@@ -109,6 +117,14 @@ public class LobbyInGame : ILobbyState {
         if (_gameState == null) {
             return;
         }
+
+        Broadcast("Mau is a game of rules.");
+
+        await Task.Delay(3000);
+
+        Broadcast("... it begins now.");
+
+        await Task.Delay(2000);
 
         while (true) {
             PlayerState? currentPlayer = (PlayerState?)_gameState.Players[_gameState.CurrentPlayerIndex];
