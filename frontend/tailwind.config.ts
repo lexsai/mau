@@ -12,6 +12,19 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      keyframes: {
+        highlight: {
+          '0%': {
+            background: '#8f8',
+          },
+          '100%': {
+            background: 'none',
+          },
+        }
+      },
+      animation: {
+        highlight: 'highlight 1s',
+      }
     },
   },
   plugins: [],

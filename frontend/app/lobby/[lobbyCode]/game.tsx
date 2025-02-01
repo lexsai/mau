@@ -31,7 +31,6 @@ export default function Game({ playerName } : { playerName: string }) {
   const [lastPlayedCard, setLastPlayedCard] = useState<string>('');
   const [awaitingInput, setAwaitingInput] = useState<boolean>(false);
   const [selectedCard, setSelectedCard] = useState<number>(-1);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
  
   useEffect(() => {
     setShareUrl(`${window.location.origin}/lobby/${lobbyCode}`);
@@ -67,7 +66,7 @@ export default function Game({ playerName } : { playerName: string }) {
 
     conn.on('RequestCard', async () => {
       setAwaitingInput(true);
-      await until(() => cardInput != -1, 5000);
+      await until(() => cardInput != -1, 10000);
       
       let tmpInput = cardInput;
       cardInput = -1;
@@ -75,9 +74,6 @@ export default function Game({ playerName } : { playerName: string }) {
       return tmpInput.toString();
     })
 
-    conn.on('ChatMessage', (data) => {
-      setChatMessages((messages) => [...messages, data]);
-    })
 
     conn.start().then(() => {
       conn.invoke('JoinLobby', lobbyCode, playerName)
@@ -101,10 +97,6 @@ export default function Game({ playerName } : { playerName: string }) {
     setSelectedCard(index);
     setAwaitingInput(false);
     cardInput = index;
-  }
-
-  function sendChat(content: string) {
-    connection?.invoke('SendChat', content)
   }
 
   if (!gameStarted) {
@@ -141,12 +133,15 @@ export default function Game({ playerName } : { playerName: string }) {
             <br />
             <div className="font-bold">Hand:</div>
             <div className="flex flex-wrap items-center justify-center max-w-3xl">
-             {hand.map((card, index) => <Card highlight={selectedCard === index} 
-                                              value={card} onClick={() => playCard(index)} key={index} />)}
+              <Card highlight={selectedCard === -2} 
+                    value="pass" onClick={() => playCard(-2)} />
+              {hand.map((card, index) => <Card highlight={selectedCard === index} 
+                                               value={card} 
+                                               onClick={() => playCard(index)} key={index} />)}
             </div>
           </div>
           <div className="mx-10">
-            <ChatBox playerName={playerName} messages={chatMessages} sendCallback={sendChat} />
+            <ChatBox playerName={playerName} connection={connection as HubConnection} />
           </div>
         </div>
       </div>

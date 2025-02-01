@@ -21,12 +21,24 @@ public class LobbyInGame : ILobbyState {
         await _lobby.Group.WriteMessage("Game has already started.");
     }
     
-    public async Task SendChat(HubCallerContext hubCallerContext, string content) {    
-        User user = _lobby.Users[hubCallerContext.ConnectionId];
+    public async Task SendChat(HubCallerContext hubCallerContext, string content) { 
+        if (_gameState == null) {
+            return;
+        }
 
+        User user = _lobby.Users[hubCallerContext.ConnectionId];
+        
         ChatMessage message = new ChatMessage(content, user.Name);
-        _gameState?.Messages.Add(message);
+        _gameState.Messages.Add(message);
+
         await _lobby.Group.ChatMessage(message);
+        
+        foreach (PlayerState player in _gameState.Players) {
+            if (player.ConnectionId == hubCallerContext.ConnectionId
+                && !player.DemandedPhrases.Contains(content)) {
+                IssuePenalty(player, "No unnecessary speech.");
+            }    
+        }
     }
 
     public async Task OnStateChange() {
@@ -43,6 +55,7 @@ public class LobbyInGame : ILobbyState {
     }
 
     public void CheckMessageSent(PlayerState player, string content) {
+        player.DemandedPhrases.Add(content);
         _ = Task.Run(async () => {
             await CheckMessageSentAsync(player, content);
         });
@@ -60,11 +73,12 @@ public class LobbyInGame : ILobbyState {
         bool messageSent = false;
         foreach (ChatMessage message in _gameState.Messages) {
             if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - message.TimeSent <= 5 && 
-                message.Sender == userName && message.Content.ToLower() == content) {
+                message.Sender == userName && message.Content.Trim().ToLower() == content) {
                 messageSent = true;
             }
         }
 
+        player.DemandedPhrases.Remove(content);
         if (!messageSent) {
             IssuePenalty(player, $"Failure to say \"{content}\"");
 
@@ -80,7 +94,10 @@ public class LobbyInGame : ILobbyState {
 
         _gameState.Draw(target);
         string targetName = _lobby.Users[target.ConnectionId].Name;
-        CheckMessageSent(target, "thank you");
+        
+        if (!target.DemandedPhrases.Contains("thank you")) {
+            CheckMessageSent(target, "thank you");
+        }
         
         foreach (PlayerState player in _gameState.Players) {
             IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
@@ -103,7 +120,7 @@ public class LobbyInGame : ILobbyState {
             IGameHub userConnection = currentUser.Connection;
 
             CancellationTokenSource cancellationTokenSource = new();
-            cancellationTokenSource.CancelAfter(6000);
+            cancellationTokenSource.CancelAfter(15000);
 
             List<Task<(PlayerState, string?)>> cardRequests = new(_gameState.Players.Count);
             foreach (PlayerState player in _gameState.Players) {
@@ -125,7 +142,8 @@ public class LobbyInGame : ILobbyState {
                     } else {
                         IssuePenalty(receivedPlayer, "Failure to play a card during their turn.");
                     }
-                } else if (receivedCard != "-1" || receivedCard == null) {
+                } else if (receivedCard != "-1" && receivedCard != null && receivedCard != "-2") {
+                    await receivedConnection.WriteMessage($"... It was {currentUser.Name}'s turn.");
                     IssuePenalty(receivedPlayer, "Playing a card during another player's turn.");
                 } else {
                     await receivedConnection.WriteMessage($"... It was {currentUser.Name}'s turn.");
@@ -165,7 +183,15 @@ public class LobbyInGame : ILobbyState {
 
             _gameState.EndTurn();
 
-            await Task.Delay(30000);
+            await Task.Delay(8000);
+            
+            int maxDemandedPhrases = 0;
+            foreach (PlayerState player in _gameState.Players) {
+                if (player.DemandedPhrases.Count > maxDemandedPhrases) {
+                    maxDemandedPhrases = player.DemandedPhrases.Count;
+                }
+            }
+            await Task.Delay(5000 * maxDemandedPhrases);
         }
     }
 

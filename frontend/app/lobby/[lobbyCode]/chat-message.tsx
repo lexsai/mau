@@ -1,7 +1,8 @@
 'use client'
 
+import { HubConnection } from "@microsoft/signalr";
 import Form from "next/form";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import reactStringReplace from "react-string-replace";
 
 export interface ChatMessage {
@@ -16,46 +17,55 @@ function MessageElement({message, playerName}: {message: ChatMessage, playerName
     playerName, 
     (match, i, key) => <div className="inline underline text-red-900 text-green-900" key={key}>{playerName}(YOU)</div>);
   return (
-    <>
+    <div className="animate-highlight">
       <div className={message.sender == "The Dealer" ? "text-red-900 font-bold" : "text-blue-900"}>{message.sender} says:</div>
       <div className="text-black ml-5">{content}</div>
-    </>
+    </div>
   )
 }
 
+let shouldScroll = false;
+
 export default function ChatBox({
-   playerName, messages, sendCallback 
+   playerName, connection 
 } : { 
   playerName: string,
-  messages: ChatMessage[], 
-  sendCallback: Function
+  connection: HubConnection
 }) {
-  const historyRef = useRef<HTMLDivElement>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
-  function updateScroll() {
+  const historyRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    connection.on('ChatMessage', (data) => {
+      if (historyRef.current != null) {
+        const history = historyRef.current; 
+        shouldScroll = (history.scrollTop + history.clientHeight === history.scrollHeight);
+      }
+      setChatMessages((messages) => [...messages, data]);
+    })
+  }, []);
+
+  useEffect(() => {
     if (historyRef.current == null) {
       return;
     }
-    const history = historyRef.current;
-
-    let shouldScroll = ((history.scrollHeight - history.offsetHeight) == history.scrollTop)
-    shouldScroll = shouldScroll || history.offsetHeight == 0;
 
     if (shouldScroll) {
-      history.scrollTop = history.scrollHeight;
+      historyRef.current.scrollTop = historyRef.current.scrollHeight;
     }
-  }
-  setInterval(updateScroll, 100);
+  }, [chatMessages])
+
 
   function sendMessage(formData: FormData) {
-    sendCallback(formData.get("sendContent"));
+    connection.invoke("sendChat", formData.get("sendContent") as string);
   }
 
   return <div className=" bg-white w-[600px] text-black border-2 border-black flex flex-col text-left">
     <div ref={historyRef} className="h-96 shrink-0 overflow-auto">
-      {messages.map((message, index) => <MessageElement message={message} 
-                                                        playerName={playerName} 
-                                                        key={message.sender + message.timeSent + message.content} />)}
+      {chatMessages.map((message, index) => <MessageElement message={message} 
+                                                            playerName={playerName} 
+                                                            key={message.sender + message.timeSent + message.content} />)}
     </div>
     <Form action={sendMessage} className="flex w-full border-t-2 border-black">
       <input name="sendContent" autoComplete="off" className="text-black grow" />
