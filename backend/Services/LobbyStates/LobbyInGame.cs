@@ -165,7 +165,7 @@ public class LobbyInGame : ILobbyState {
 
             _gameState.EndTurn();
 
-            await Task.Delay(3000);
+            await Task.Delay(30000);
         }
     }
 
