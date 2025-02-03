@@ -104,5 +104,10 @@ public class LobbyService {
             Admin = newAdmin;
             await newAdmin.Connection.NotifyAdmin();
         }
+
+        if (Users.Count == 1) {
+            Winner = Users.Values.First();
+            await ChangeState(FinishedState);
+        }
     }
 }

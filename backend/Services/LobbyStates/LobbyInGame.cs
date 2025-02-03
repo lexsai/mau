@@ -121,12 +121,6 @@ public class LobbyInGame : ILobbyState {
                 return;
             }
             
-            if (_lobby.Users.Count == 1) {
-                _lobby.Winner = _lobby.Users.Values.First();
-                await _lobby.ChangeState(_lobby.FinishedState);
-                return;
-            }
-
             _gameState.EndTurn();
 
             await Task.Delay(8000);
