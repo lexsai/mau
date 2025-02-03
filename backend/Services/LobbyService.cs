@@ -13,6 +13,8 @@ public class LobbyService {
     public ConcurrentDictionary<string, User> Users { get; }= new();
     public User? Winner { get; set; }
 
+    public User? Admin { get; private set; }
+
     private readonly IHubContext<GameHub, IGameHub> _hubContext;
 
     public LobbyWaiting WaitingState { get; }
@@ -70,7 +72,13 @@ public class LobbyService {
             return;
         }
 
-        if (Users.TryAdd(connectionId, new User(connection, userName, connectionId))) {
+        User newUser = new User(connection, userName, connectionId);
+        if (Users.TryAdd(connectionId, newUser)) {
+            if (Users.Count == 1) {
+                Admin = newUser;
+                await connection.NotifyAdmin();
+            }
+
             await _hubContext.Groups.AddToGroupAsync(connectionId, Name);
 
             await Group.LobbyUsersUpdate(UserNames);
@@ -91,6 +99,10 @@ public class LobbyService {
 
         if (Users.Count == 0) {
             CompletedCts.Cancel();
+        } else {
+            User newAdmin = Users.Values.First(); 
+            Admin = newAdmin;
+            await newAdmin.Connection.NotifyAdmin();
         }
     }
 }

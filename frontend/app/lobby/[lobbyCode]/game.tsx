@@ -26,7 +26,7 @@ export default function Game({ playerName } : { playerName: string }) {
   const [lobbyMembers, setLobbyMembers] = useState<string[]>([]);
   const [lastTurnPlayer, setLastTurnPlayer] = useState<string>('');
   const [message, setMessage] = useState<string>('');
-  const [isAdmin, setIsAdmin] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [hand, setHand] = useState<string[]>([]);
   const [lastPlayedCard, setLastPlayedCard] = useState<string>('');
@@ -69,6 +69,10 @@ export default function Game({ playerName } : { playerName: string }) {
       setHand(data);
     })
 
+    conn.on('NotifyAdmin', () => {
+      setIsAdmin(true);
+    }) 
+
     conn.on('RequestCard', async () => {
       setAwaitingInput(true);
       await until(() => cardInput != -1, 10000);
@@ -79,7 +83,6 @@ export default function Game({ playerName } : { playerName: string }) {
       return tmpInput.toString();
     })
 
-
     conn.start().then(() => {
       conn.invoke('JoinLobby', lobbyCode, playerName)
       console.log("tried join");
@@ -87,6 +90,9 @@ export default function Game({ playerName } : { playerName: string }) {
 
     setConnection(conn);
 
+    return () => {
+      conn.stop();
+    }
   }, []);
 
   function startGame() {
@@ -110,7 +116,7 @@ export default function Game({ playerName } : { playerName: string }) {
         <div className="absolute top-[30%] left-[50%] transform translate-x-[-50%] translate-y-[-50%] text-center flex flex-col">
           <Link href="/" className="text-white text-5xl py-2">mau</Link>
                 
-          <div className="italic">You are '{playerName}'. {isAdmin && <div>You have authority to start the game.</div>}</div>
+          <div className="italic">You are '{playerName}'. {isAdmin && <div>You are an admin of this lobby.</div>}</div>
           {isAdmin && <button onClick={startGame} className="text-black bg-red-200 hover:bg-red-400 px-5 my-2 mx-auto w-64">Start Game</button>}
           <br />
           <div>Invite others to the lobby with this link: <Link className="text-yellow-300" href={shareUrl}>{shareUrl}</Link></div>

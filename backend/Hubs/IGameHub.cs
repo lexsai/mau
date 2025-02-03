@@ -10,5 +10,6 @@ public interface IGameHub {
     public Task HandUpdate(List<string> hand);
     public Task PlayedCardUpdate(string card);
     public Task TurnUpdate(string lastTurnPlayer);
+    public Task NotifyAdmin();
     public Task ChatMessage(ChatMessage message);
 }
