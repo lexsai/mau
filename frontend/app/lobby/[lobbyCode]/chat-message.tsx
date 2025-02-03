@@ -14,7 +14,7 @@ export interface ChatMessage {
 function MessageElement({message, playerName}: {message: ChatMessage, playerName: string}) {
   const content = reactStringReplace(
     message.content, 
-    playerName, 
+    playerName + '.', 
     (match, i, key) => <div className="inline underline text-red-900 text-green-900" key={key}>{playerName}(YOU)</div>);
   return (
     <div className="animate-highlight">

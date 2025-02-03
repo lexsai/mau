@@ -11,12 +11,14 @@ public class GameState {
     public ArrayList Players { get; } = ArrayList.Synchronized(new ArrayList());
     public ArrayList Messages { get; } = ArrayList.Synchronized(new ArrayList());
 
-
     public int CurrentPlayerIndex { get; private set; }
 
-    private readonly Random _random = new();
-
     public PlayerState? Winner { get; set; }
+
+    private readonly Random _random = new();
+    private int _veryNumber = 0;
+    private int _order = 1; // 1 for clockwise, -1 for anticlockwise. 
+    private bool _doSkip = false;
 
     public GameState(ConcurrentDictionary<string, User> players) {
         GenerateDeck();
@@ -66,10 +68,16 @@ public class GameState {
     }
 
     public void EndTurn() {
-        if (CurrentPlayerIndex + 1 >= Players.Count) {
+        if (CurrentPlayerIndex + _order >= Players.Count) {
             CurrentPlayerIndex = 0;
+        } else if (CurrentPlayerIndex + _order < 0) {
+            CurrentPlayerIndex = Players.Count - 1;
         } else {
-            CurrentPlayerIndex++;
+            CurrentPlayerIndex += _order;
+        }
+        if (_doSkip) {
+            _doSkip = false;
+            EndTurn();
         }
     }
 
@@ -83,13 +91,24 @@ public class GameState {
         }
     }
 
-    public Card? PlayCard(int cardIndex) {
+    public Card? PlayCard(int cardIndex, 
+                          Action<PlayerState, string> demandMessage,
+                          Action<PlayerState, string> issuePenalty) {
         PlayerState? currentPlayer = (PlayerState?)Players[CurrentPlayerIndex];
         if (currentPlayer == null) {
             return null;
         }
 
         Card chosenCard = currentPlayer.Hand[cardIndex];
+        
+        Card? discardTop;
+        if (Discard.TryPeek(out discardTop) 
+            && discardTop.Suit != chosenCard.Suit 
+            && discardTop.Rank != chosenCard.Rank) {
+            issuePenalty(currentPlayer, "Failure to play a valid card.");
+            return null;
+        }
+
         currentPlayer.Hand.RemoveAt(cardIndex);
         Discard.Push(chosenCard);
 
@@ -99,6 +118,31 @@ public class GameState {
 
         if (currentPlayer.Hand.Count == 0) {
             Winner = currentPlayer;
+        }
+        
+        if (chosenCard.Rank == CardRank.Seven) {
+            string veryText = string.Concat(Enumerable.Repeat(" very", _veryNumber));
+            demandMessage(currentPlayer, $"have a{veryText} nice day");
+            _veryNumber += 1;
+        } else {
+            _veryNumber = 0;
+        }
+        if (chosenCard.Rank == CardRank.Eight) {
+            _order *= -1;
+        }
+        if (chosenCard.Rank == CardRank.King) {
+            demandMessage(currentPlayer, "hail to the chief");
+            foreach (PlayerState player in Players) {
+                if (player != currentPlayer) {
+                    demandMessage(player, "all hail");
+                }
+            }
+        }
+        if (chosenCard.Rank == CardRank.Ace) {
+            _doSkip = true;
+        }
+        if (chosenCard.Suit == CardSuit.Spades) {
+            demandMessage(currentPlayer, chosenCard.Name());
         }
 
         return chosenCard;

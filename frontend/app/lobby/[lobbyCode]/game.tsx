@@ -123,6 +123,15 @@ export default function Game({ playerName } : { playerName: string }) {
     return (
       <div className="bg-red-700 flex h-screen">
         <div className="absolute top-[5%] left-[50%] transform translate-x-[-50%] text-center flex">
+          <div className="shrink-0">
+            <div className="font-bold">
+              Your name is "{playerName}".
+            </div>
+            <br/>
+            <div className="font-bold">Lobby Members:</div>
+            {lobbyMembers.map((name, index) => <div key={index}>{name}</div>)}
+          </div>
+
           <div className="flex text-center flex-col w-[600px] shrink-0">
             {(lastPlayedCard !== '') && <div>
               <div className="font-bold">Last Played:</div>

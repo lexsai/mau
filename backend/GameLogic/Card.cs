@@ -8,6 +8,11 @@ public class Card {
         Suit = suit;
         Rank = rank;
     }
+
+    public string Name() {
+        return $"{Rank.ToString().ToLower()} of {Suit.ToString().ToLower()}";
+    }
+
     public override string ToString()
     {
         string rankString;
