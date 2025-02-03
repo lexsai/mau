@@ -85,6 +85,7 @@ public class LobbyInGame : ILobbyState {
             int cardIndex = -1;
             foreach ((PlayerState receivedPlayer, string? receivedCard) in cardRequests.Select(r => r.Result)) {
                 IGameHub receivedConnection = _lobby.Users[receivedPlayer.ConnectionId].Connection;
+                await receivedConnection.TurnUpdate(currentUser.Name);
                 if (receivedPlayer.ConnectionId == currentPlayer.ConnectionId) {
                     int chosenCardIndex = -1;
                     bool success = int.TryParse(receivedCard, out chosenCardIndex);
@@ -103,7 +104,7 @@ public class LobbyInGame : ILobbyState {
             }
 
             if (cardIndex != -1) {
-                Card? card = _gameState.PlayCard(cardIndex, CheckMessageSent, IssuePenalty);
+                Card? card = _gameState.PlayCard(cardIndex, CheckMessageSent, IssuePenalty, ReceiveWildcard);
                 if (card != null) {
                     await _lobby.Group.PlayedCardUpdate(card.ToString());
                 }
@@ -158,12 +159,15 @@ public class LobbyInGame : ILobbyState {
         }
 
         await Task.Delay(5000);
+        if (_gameState.Winner != null) {
+            return;
+        }
         
         string userName = _lobby.Users[player.ConnectionId].Name;
 
         bool messageSent = false;
         foreach (ChatMessage message in _gameState.Messages) {
-            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - message.TimeSent <= 5 && 
+            if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.TimeSent <= 5000 && 
                 message.Sender == userName && message.Content.Trim().ToLower() == content) {
                 messageSent = true;
             }
@@ -204,6 +208,72 @@ public class LobbyInGame : ILobbyState {
         foreach (PlayerState player in _gameState.Players) {
             IGameHub playerConnection = _lobby.Users[player.ConnectionId].Connection;
             playerConnection.ChatMessage(new ChatMessage(message, "The Dealer"));
+        }
+    }
+
+    public void ReceiveWildcard(PlayerState player) {
+        player.DemandedPhrases.Add("spades");
+        player.DemandedPhrases.Add("clubs");
+        player.DemandedPhrases.Add("hearts");
+        player.DemandedPhrases.Add("diamonds");
+        _ = Task.Run(async () => {
+            await ReceiveWildcardAsync(player);
+        });
+    }
+
+    public async Task ReceiveWildcardAsync(PlayerState player) {
+        if (_gameState == null) {
+            return;
+        }
+
+        await Task.Delay(5000);
+        if (_gameState.Winner != null) {
+            return;
+        }
+        
+        string userName = _lobby.Users[player.ConnectionId].Name;
+
+        ChatMessage? suitMessage = null;
+        foreach (ChatMessage message in _gameState.Messages) {
+            string messageContent = message.Content.Trim().ToLower();
+            bool isSuit = messageContent == "spades"
+                          || messageContent == "clubs"
+                          || messageContent == "hearts"
+                          || messageContent == "diamonds";
+            if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.TimeSent <= 5000 && 
+                message.Sender == userName && isSuit) {
+                suitMessage = message;
+            }
+        }
+        player.DemandedPhrases.Remove("spades");
+        player.DemandedPhrases.Remove("clubs");
+        player.DemandedPhrases.Remove("hearts");
+        player.DemandedPhrases.Remove("diamonds");
+        if (suitMessage == null) {
+            Broadcast("Time elapsed to declare a new suit-- you can declare a new suit after playing a jack.");
+        } else {
+            Card? card;
+            switch (suitMessage.Content.Trim().ToLower()) {
+                case "spades":
+                    card = new Card(CardSuit.Spades, CardRank.Jack);
+                    break;
+                case "clubs":
+                    card = new Card(CardSuit.Clubs, CardRank.Jack);
+                    break;
+                case "hearts":
+                    card = new Card(CardSuit.Hearts, CardRank.Jack);
+                    break;
+                case "diamonds":
+                    card = new Card(CardSuit.Diamonds, CardRank.Jack);
+                    break;
+                default:
+                    card = null;
+                    break;
+            }
+            if (card != null) {
+                _gameState.Discard.Push(card);
+                await _lobby.Group.PlayedCardUpdate(card.ToString());
+            }
         }
     }
 }

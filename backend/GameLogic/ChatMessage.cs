@@ -8,6 +8,6 @@ public class ChatMessage {
     public ChatMessage(string content, string sender) {
         Content = content;
         Sender = sender;
-        TimeSent = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        TimeSent = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
 }

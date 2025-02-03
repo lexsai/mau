@@ -93,7 +93,8 @@ public class GameState {
 
     public Card? PlayCard(int cardIndex, 
                           Action<PlayerState, string> demandMessage,
-                          Action<PlayerState, string> issuePenalty) {
+                          Action<PlayerState, string> issuePenalty,
+                          Action<PlayerState> requestWildcard) {
         PlayerState? currentPlayer = (PlayerState?)Players[CurrentPlayerIndex];
         if (currentPlayer == null) {
             return null;
@@ -104,7 +105,8 @@ public class GameState {
         Card? discardTop;
         if (Discard.TryPeek(out discardTop) 
             && discardTop.Suit != chosenCard.Suit 
-            && discardTop.Rank != chosenCard.Rank) {
+            && discardTop.Rank != chosenCard.Rank
+            && chosenCard.Rank != CardRank.Jack) {
             issuePenalty(currentPlayer, "Failure to play a valid card.");
             return null;
         }
@@ -118,6 +120,10 @@ public class GameState {
 
         if (currentPlayer.Hand.Count == 0) {
             Winner = currentPlayer;
+        }
+        
+        if (currentPlayer.Hand.Count == 1) {
+            demandMessage(currentPlayer, "last card");
         }
         
         if (chosenCard.Rank == CardRank.Seven) {
@@ -140,6 +146,9 @@ public class GameState {
         }
         if (chosenCard.Rank == CardRank.Ace) {
             _doSkip = true;
+        }
+        if (chosenCard.Rank == CardRank.Jack) {
+            requestWildcard(currentPlayer);
         }
         if (chosenCard.Suit == CardSuit.Spades) {
             demandMessage(currentPlayer, chosenCard.Name());

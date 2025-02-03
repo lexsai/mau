@@ -24,6 +24,7 @@ export default function Game({ playerName } : { playerName: string }) {
   const [shareUrl, setShareUrl] = useState<string>('');
   
   const [lobbyMembers, setLobbyMembers] = useState<string[]>([]);
+  const [lastTurnPlayer, setLastTurnPlayer] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(true);
   const [gameStarted, setGameStarted] = useState<boolean>(false);
@@ -51,6 +52,10 @@ export default function Game({ playerName } : { playerName: string }) {
 
     conn.on('PlayedCardUpdate', (data) => {
       setLastPlayedCard(data);
+    })
+
+    conn.on('TurnUpdate', (data) => {
+      setLastTurnPlayer(data);
     })
 
     conn.on('WriteMessage', (data) => {
@@ -124,12 +129,18 @@ export default function Game({ playerName } : { playerName: string }) {
       <div className="bg-red-700 flex h-screen">
         <div className="absolute top-[5%] left-[50%] transform translate-x-[-50%] text-center flex">
           <div className="shrink-0">
-            <div className="font-bold">
+            <div className="font-bold text-yellow-200">
               Your name is "{playerName}".
             </div>
             <br/>
             <div className="font-bold">Lobby Members:</div>
-            {lobbyMembers.map((name, index) => <div key={index}>{name}</div>)}
+            {lobbyMembers.map((name, index) => {
+              if (name == lastTurnPlayer) {
+                return <div className="font-bold text-yellow-100" key={index}>{name} (last turn)</div>
+              } else {
+                return <div key={index}>{name}</div>;
+              }
+            })}
           </div>
 
           <div className="flex text-center flex-col w-[600px] shrink-0">
